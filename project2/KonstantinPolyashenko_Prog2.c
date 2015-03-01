@@ -36,6 +36,8 @@ int c[4];
 // 5 threads of type PThread
 pthread_t mc[4]; 
 pthread_t display;
+// variables to hold the calculations
+// later sent to display process 
 pthread_mutex_t mc_lock[4] = 
 {
 	PTHREAD_MUTEX_INITIALIZER,
@@ -51,8 +53,6 @@ void *thr_mc(void *arg)
 	
 	printf("MC%d: tid - %u\n", (int)arg, (unsigned int)pthread_self());
 	
-	//sleep(1);
-	
 	c[(int)arg] = 0;
 	
 	for (i = 0; i < 4; i++)
@@ -66,7 +66,7 @@ void *thr_mc(void *arg)
 	pthread_mutex_unlock(&mc_lock[(int)arg]);
 }
 
-// Display the other 4 matrices.
+// show the other four 
 // arg should be null.
 void *thr_display(void *arg)
 {
@@ -93,42 +93,59 @@ void *thr_display(void *arg)
 }
 
 int main (int argc, char *argv[])
-{
-    // Verify the input.
-    if (argc != 17)
-    {
-        printf("Incorrect number of inputs. Use 16 integers. %d\n", argc - 1);
-        exit(0);
-    }
-    
-    int i, j;
-    
-    //printf("Input validating....\n");
-    
-    for (i = 1; i < argc; i++)
+{	
+	// verifies if entered values are correct
+	int booleanprint = 0; //value changes if input is not acceptable
+	//check if user input contains only ints
+	int i;
+	int j;
+	for (i = 1; i < argc; i++)
     {
         j = 0;
-        
-        // Allow '+' or '-'
-        if (argv[i][j] == '-' || argv[i][j] == '+')
+        // positive and negative ints are valid inputs
+        //if + or - is present incriment j
+        if (argv[i][j] == '+')
         {
             j++;
+        }
+        else if (argv[i][j] == '-')
+        {
+        	j++;
         }
         
         for (; argv[i][j] != 0; j++)
         {
-            //printf("hey%s", argv[i][j]);
             if (!isdigit(argv[i][j]))
             {
-                printf("Invalid input. Use 16 integers. %s is invalid.\n", argv[i]);
-                exit(0);
+                booleanprint = 1;
             }
         }
     }
+
+    // check if user input is acceptable
+    if (argc != 17)
+    {
+        booleanprint = 2;
+    }
+
+    // if improper input was detected
+    // determine what input error was, notify user and exit
+    if (booleanprint != 0)
+    {
+        if (booleanprint == 1)
+        {
+            printf("Incorrect type of input.\n");
+        }
+        else if (booleanprint == 2)
+        {
+            printf("Incorrect number of input.\n");
+        }
+        exit(0);
+    }
     
-    //printf("Input valid. Filling arrays.\n");
+    // printf("Input valid. Filling arrays.\n");
     
-    // Get the values for A & B.
+    // get values from a and b 
     for (i = 0; i < 8; i++)
     {
         //printf("a[%d]", i);
@@ -137,27 +154,20 @@ int main (int argc, char *argv[])
         b[i] = atoi(argv[i + 9]);
     }
     
-	// Create the 4 mc threads with a for loop.
+	// loop to make the 4 mc threads
 	for (i = 0; i < 4; i++)
 	{
-		printf("Main: creating thread 'MC%d'\n", i);
-		
-		// -- DEPRECIATED --
-		// Lock the mutex for each mc thread
-		// to avoid the racing condition of the display thread
-		// happening to run before mc0.
-		//pthread_mutex_lock(&mc_lock[i]);
+		printf("Main: thread is created 'MC%d'\n", i);
 		
 		pthread_create(&mc[i], NULL, thr_mc, (void *) i);
 	}
 	
-	sleep(1); // To avoid the racing condition...wait to create display.
+	sleep(1); // waiting to create the display
 	
-	printf("Main: creating thread 'Display'\n");
-	// Display didn't get in the for loop.
+	printf("Main: thread is created 'Display'\n");
+
 	pthread_create(&display, NULL, thr_display, (void *) NULL);
 	
-	// The join is similar to creation, with 'join' instead of create.
 	printf("Main: waiting for threads\n");
 	for (i = 0; i < 4; i++)
 	{
@@ -168,7 +178,7 @@ int main (int argc, char *argv[])
 	pthread_join(display, NULL);
 	printf("Main: waited for 'Display'\n");
 	
-	// Exit the program.
+	//finished, exit program
 	printf("Main: finished\n");
     exit(0);
 }
