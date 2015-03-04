@@ -1,5 +1,5 @@
 //Konstantin Polyashenko
-//Programming Assignment 1
+//Programming Assignment 2
 //CSC 139
 
 //testing
@@ -28,16 +28,14 @@
 //defines various functions for performing general functions
 #include <stdlib.h>
 
-// macromacro will not work with mc_lock[number] = PTHREAD_MUTEX_INITIALIZER;
-// macro malfunctions with an array
 int a[8];
 int b[8];
 int c[4];
-// 5 threads of type PThread
+//5 threads of type PThread
 pthread_t mc[4]; 
 pthread_t display;
-// variables to hold the calculations
-// later sent to display process 
+//variables to hold calculations
+//then sent to display process 
 pthread_mutex_t mc_lock[4] = 
 {
 	PTHREAD_MUTEX_INITIALIZER,
@@ -46,55 +44,58 @@ pthread_mutex_t mc_lock[4] =
 	PTHREAD_MUTEX_INITIALIZER
 };
 
-// thread function for matrix calculating
+//thread function for matrix calculating
 void *thr_mc(void *arg)
-{
-	int i;
-	
-	printf("MC%d: tid - %u\n", (int)arg, (unsigned int)pthread_self());
+{	
+	printf("MC%d: tid %u\n", (int)arg, (unsigned int)pthread_self());
 	
 	c[(int)arg] = 0;
 	
+	int i;
 	for (i = 0; i < 4; i++)
 	{
 		c[(int)arg] += a[i + 4 * ((int)arg / 2)] * b[i * 2 + (int)arg % 2];
 	}
 	
-	// write exiting
-	// unlock to not show results 
+	//write exiting
+	//unlock to not show results 
 	printf("MC%d: exiting\n", (int)arg);
 	pthread_mutex_unlock(&mc_lock[(int)arg]);
+
+	return 0;
 }
 
-// show the other four 
-// arg should be null.
+//show the other four 
+//arg should be null.
 void *thr_display(void *arg)
 {
 	int i;
 	
 	printf("Display: tid - %u\n", (unsigned int)pthread_self());
 	
-	// Be blocked by the other threads...
+	//blocked by other threads
 	for (i = 0; i < 4; i++)
 	{
 		pthread_mutex_lock(&mc_lock[i]);
 	}
+
+	printf("\nThe first row of the resulting matrix is: %d\t%d\n", c[0], c[1]);
+	printf("\nThe second row of the resulting matrix is: %d\t%d\n\n", c[2], c[3]);
 	
-	printf("\nThe first row of the resulting matrix is:\t%d\t%d\n", c[0], c[1]);
-	printf("\nThe second row of the resulting matrix is:\t%d\t%d\n\n", c[2], c[3]);
-	
-	// Unlock the recently locked mutexes.
+	//loop to unlock
 	for (i = 0; i < 4; i++)
 	{
 		pthread_mutex_unlock(&mc_lock[i]);
 	}
 		
-	printf("Display: exiting\n");
+	printf("Exiting\n");
+
+	return 0;
 }
 
 int main (int argc, char *argv[])
 {	
-	// verifies if entered values are correct
+	//check if entered values are correct
 	int booleanprint = 0; //value changes if input is not acceptable
 	//check if user input contains only ints
 	int i;
@@ -102,7 +103,7 @@ int main (int argc, char *argv[])
 	for (i = 1; i < argc; i++)
     {
         j = 0;
-        // positive and negative ints are valid inputs
+        //positive and negative ints are valid inputs
         //if + or - is present incriment j
         if (argv[i][j] == '+')
         {
@@ -122,14 +123,14 @@ int main (int argc, char *argv[])
         }
     }
 
-    // check if user input is acceptable
+    //check if user input is acceptable
     if (argc != 17)
     {
         booleanprint = 2;
     }
 
-    // if improper input was detected
-    // determine what input error was, notify user and exit
+    //if improper input was detected
+    //determine what input error was, notify user and exit
     if (booleanprint != 0)
     {
         if (booleanprint == 1)
@@ -143,42 +144,38 @@ int main (int argc, char *argv[])
         exit(0);
     }
     
-    // printf("Input valid. Filling arrays.\n");
-    
-    // get values from a and b 
+    //get values from a and b 
     for (i = 0; i < 8; i++)
     {
-        //printf("a[%d]", i);
         a[i] = atoi(argv[i + 1]);
-        //printf("b[%d]\n", i);
+
         b[i] = atoi(argv[i + 9]);
     }
     
-	// loop to make the 4 mc threads
+	//loop to make the 4 mc threads
 	for (i = 0; i < 4; i++)
 	{
-		printf("Main: thread is created 'MC%d'\n", i);
+		printf("Thread Created MC%d\n", i);
 		
 		pthread_create(&mc[i], NULL, thr_mc, (void *) i);
 	}
 	
-	sleep(1); // waiting to create the display
+	sleep(1); //waiting to make the display
 	
-	printf("Main: thread is created 'Display'\n");
+	printf("Display created by thread\n");
 
 	pthread_create(&display, NULL, thr_display, (void *) NULL);
 	
-	printf("Main: waiting for threads\n");
+	printf("Waiting for threads\n");
 	for (i = 0; i < 4; i++)
 	{
 		pthread_join(mc[i], NULL);
-		printf("Main: waited for 'MC%d'\n", i);
+		printf("Waited for MC%d\n", i);
 	}
 	
 	pthread_join(display, NULL);
-	printf("Main: waited for 'Display'\n");
+	printf("Waiting for Display\n");
 	
-	//finished, exit program
-	printf("Main: finished\n");
+	printf("Finished\n");
     exit(0);
 }

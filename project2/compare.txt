@@ -1,0 +1,12 @@
+Multithreading vs. Multiprocessing
+
+The multithreading approach utilizes threads while the multiprocessing approach 
+on the other hand uses processes. Overall the way that processes deal with memory
+sharing results in it being harder for objects to be shared. When the multiprocessing
+appoach was implemented it required pipes for communication between diffrent components. 
+With threading you have the advantage of it being lightweight and shared memory. 
+When a thread is made, there is no requirnment of stack space duplication and kernel 
+costructs. Multiprocess needs pipes to talk to another part. Thread run in the same 
+memory space but with processes you will need to have seperate memory space.To conclude 
+it should be noted that the time requirenment is greater when in kernel mode for the 
+multiprocessing approach.
