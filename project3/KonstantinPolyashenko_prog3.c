@@ -16,8 +16,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 
-#define SLOTSIZE 12
-#define SLOTCNT  10
+#define SLOTSIZE 18
+#define SLOTCNT  9
 
 char buffer[SLOTSIZE][SLOTCNT] = { 0 };
 
