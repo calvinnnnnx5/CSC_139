@@ -13,19 +13,29 @@
 //cat outfile
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <sys/uio.h>
+#include <string.h>
 #include <pthread.h>
 #include <semaphore.h>
 
-#define SLOTSIZE 18
+//18 bytes read in at a time from infile
+#define SLOTSIZE 18 
+//9 total slots with 18 
 #define SLOTCNT  9
 
+//2D array to 
 char buffer[SLOTSIZE][SLOTCNT] = { 0 };
 
-int start, end;
+int start;
+int end;
 
 FILE *in, *out;
 
-pthread_t producer, consumer;
+pthread_t producer; 
+pthread_t consumer;
 
 sem_t buf_lock;
 sem_t slot_avail;
@@ -49,18 +59,18 @@ void *pro()
             buffer[end][i] = c;
         }
         
-        //no overflow
+        // no overflow
         end = (end + 1) % SLOTSIZE;
         
-        sem_post(&buf_lock);   // Allow con to access...
+        sem_post(&buf_lock); //allow con to access...
         
-        sem_post(&item_avail); // Let con know it can consume...
+        sem_post(&item_avail); //let con know it can consume...
     }
 }
 
 void *con()
 {
-    char c = 1; // Flag variable
+    char c = 1; //flag variable
     
     while (c != EOF)
     {
@@ -146,8 +156,11 @@ int main(int argc, char *argv[])
     
     fclose(out);
     
-    //confirm that everythign was done properly
+    //everything has been done
+    //program closes
     printf("Done.\n");
     
+    //all functions should have a return
+    //return of 0 to identify proper execution
     return 0;
 }
