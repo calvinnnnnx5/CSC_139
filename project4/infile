@@ -1,16 +1,11 @@
-Semaphores are effective tools for critical section solution and
-synchronization of concurrent activities. In this exercise, we will
-use semaphores to implement the bounded-buffer producer/consumer
-approach for a file copying application. Specifically, you need to
-create a producer thread and a consumer thread that work concurrently
-with a buffer of 9 slots. The producer produces (reads) a string of
-18-byte at a time from the input file, i.e., this file, and places
-(writes) the string to the next available slot in the buffer in a
-mutually exclusive manner. On the other hand, the consumer fetches a
-an item (18-byte string) from the next filled buffer slot at a time,
-and consumes it (writes it to the output file). When the process is
-finished, the output file is a verbatim copy of the input file.
-Three semaphores are used to enforce the mutually exclusive access to
-the buffer and to synchronize the activities of the producer and
-the consumer. A final note: the last string processed may not be
-exactly 18-byte long.
+Instead of using semaphores to synchronize concurrent activities,
+This assignment offers an opportunity for you to use the mutex locks
+and condition variables to coordinate the producer and the consumer
+activities in the context of the file copying application.
+In contrast to the semaphore-based solution where the order
+of two semaphore wait operations is of pivotal importance to avoid
+potential deadlocks, the mutex-lock-condition-variable approach allows
+a thread to suspend on a particular condition and release the mutex
+lock at the same time via the pthread_cond_wait operation, therefore
+avoiding potential deadlocks. This exercise helps reinforce the point
+that there are different synchronization approaches to a given problem.
