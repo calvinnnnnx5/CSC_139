@@ -17,13 +17,7 @@ char *mm_file; //file is shared between child processes
 int fd; //FILE* cannot be used here
 
 //input string
-char data[] = "with the mmap call, a disk file gets mapped into memory through demand\npaging,
-							i.e., a page sized portion of the file is initially read into\nmemory through a page
-							fault. subsequent reads and writes to that portion\nof the file are handled as routine
-							memory accesses. this improves file\nprocessing performance. in this assignment,
-							the parent process memory maps\nthis disk file first, and then creates two child
-							processes that each make\nsome changes to this file. when both child processes are
-							done, changes\nmade in memory are synch'ed to the disk file.\n\0";
+char data[] = "with the mmap call, a disk file gets mapped into memory through demand\npaging, i.e., a page sized portion of the file is initially read into\nmemory through a page fault. subsequent reads and writes to that portion\nof the file are handled as routine memory accesses. this improves file\nprocessing performance. in this assignment, the parent process memory maps\nthis disk file first, and then creates two child processes that each make\nsome changes to this file. when both child processes are done, changes\nmade in memory are synch'ed to the disk file.\n\0";
 
 //first child method
 void firstChild()
@@ -46,17 +40,18 @@ void firstChild()
 }
 
 //second child method
-void secChild()
+void secondChild()
 {
-	sleep(1); //sleeps while child 1 is working
+	sleep(1); //so that child 2 will perform its task after child 1 finishes
 	//print child process and the content
 	printf("Child 2 %d reads: \n %s\n", getpid(), mm_file);
 
-	//manipulates the string
+	//manipulates the string for desired outcome
 	char *h[] = {"PAGE SIZED\0", "PAGE-SIZED\0"};
 	char *c[] = {"MAPPED\0", "LOADED\0"};
 
-	int i, j;
+	int i;
+	int j;
 	for (i = 0; i < buf.st_size; i++)
 	{
 		for (j = 0; h[0][j] != '\0' && i + j < buf.st_size && h[0][j] == mm_file[i + j]; j++);
@@ -107,8 +102,8 @@ int main(int argc, char *argv[])
   write(fd, data, strlen(data));
 
 	//takes care of file size
-  fstat(fd, &buf);
-  	mm_file = mmap(0, (size_t) buf.st_size,
+  fstat(fd, &buf); //used to determine the size of the file
+  mm_file = mmap(0, (size_t) buf.st_size,
     PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 
 	//check if mm_file fails
@@ -121,17 +116,17 @@ int main(int argc, char *argv[])
 
 	int child[2]; //child arrays
 
-	//statements to detmine what child method to invoke
+	//statements to determine what child method to invoke
 	if ((child[0] = fork()) == 0)
 	{
 		firstChild();
 	}
 	if ((child[1] = fork()) == 0)
 	{
-		secChild();
+		secondChild();
 	}
 
-	//waiting for the child processes
+	//wait for child process
 	waitpid(child[0], &i, 0);
   printf("Waited for child %d.\n\n", child[0]);
 	waitpid(child[1], &i, 0);
@@ -143,5 +138,5 @@ int main(int argc, char *argv[])
 	close(fd);
 
   printf("Finished\n");
-	return 0;
+	return 0; //all is finished
 }
