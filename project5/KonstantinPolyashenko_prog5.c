@@ -13,46 +13,52 @@
 #include <string.h>
 
 struct stat buf; //info about file
-
 char *mm_file; //file is shared between child processes
+int fd; //FILE* cannot be used here
 
-int fd; FILE* //cant be used for map
+//input string
+char data[] = "with the mmap call, a disk file gets mapped into memory through demand\npaging,
+							i.e., a page sized portion of the file is initially read into\nmemory through a page
+							fault. subsequent reads and writes to that portion\nof the file are handled as routine
+							memory accesses. this improves file\nprocessing performance. in this assignment,
+							the parent process memory maps\nthis disk file first, and then creates two child
+							processes that each make\nsome changes to this file. when both child processes are
+							done, changes\nmade in memory are synch'ed to the disk file.\n\0";
 
-char data[] = "memory mapping a disk file into virtual memory, done via the mmap call,
-							\nallows file i/o to be treated as routine memory accesses.\nin this exercise,
-							this file gets memory mapped first. Then two child\nprocesses: child-1 and child-2,
-							 each will make some changes to the file.\n\0";
-
-void upchild()
+//first child method
+void firstChild()
 {
+	//print child process and the content
 	printf("Child 1 %d reads: \n %s\n", getpid(), mm_file);
+
+	//loop to check for lower case letters
 	int i;
 	for (i = 0; i < buf.st_size; i++)
 	{
-		if (mm_file[i] >= 'a' && mm_file[i] <= 'z')
-		{
-			mm_file[i] += 'A' - 'a';
-		}
+		mm_file[i] = toupper(mm_file[i]);
 	}
-	msync(0, (size_t) buf.st_size, MS_SYNC);
-	printf("Child 1 %d reads again: \n %s\n", getpid(), mm_file);
 
-	exit(0); //exit child process
+	//synchs the result of the memory mapped stuff and the actual storage
+	msync(0, (size_t) buf.st_size, MS_SYNC);
+	//prints the uppercase content
+	printf("Child 1 %d reads again: \n %s\n", getpid(), mm_file);
+	exit(0); //child process is done
 }
 
-void repchild()
+//second child method
+void secChild()
 {
-	sleep(1);
+	sleep(1); //sleeps while child 1 is working
+	//print child process and the content
 	printf("Child 2 %d reads: \n %s\n", getpid(), mm_file);
 
-	char *h[] = {"MEMORY MAPPING\0", "MEMORY-MAPPING\0"};
-	char *c[] = {"CHANGES\0", "UPDATES\0"};
+	//manipulates the string
+	char *h[] = {"PAGE SIZED\0", "PAGE-SIZED\0"};
+	char *c[] = {"MAPPED\0", "LOADED\0"};
 
 	int i, j;
 	for (i = 0; i < buf.st_size; i++)
 	{
-		// Are there functions in "string.h" to do this...yes...
-		// Did I want to look at man pages or have fun...I wanted fun...
 		for (j = 0; h[0][j] != '\0' && i + j < buf.st_size && h[0][j] == mm_file[i + j]; j++);
 		if (h[0][j] == '\0')
 		{
@@ -71,70 +77,71 @@ void repchild()
 			}
 		}
 	}
-	printf("Child 2 %d reads again: \n %s\n", getpid(), mm_file);
 
-	exit(0); //exit child process
+	//prints the manipulated string
+	printf("Child 2 %d reads again: \n %s\n", getpid(), mm_file);
+	exit(0); //child process is done
 }
 
+//main method
 int main(int argc, char *argv[])
 {
-	//check for correct input
-  if (argc != 2)
-  {
-  	printf("Correct Usage: prog5 filename");
+	if (argc != 2)
+	{
+  	printf("Correct Usage: prog5 infile\n");
     return 0;
   }
 
-	//create then open file
-	//give read/write access to users
-	fd = open(argv[1], O_RDWR | O_TRUNC | O_CREAT, S_IRWXO | S_IRWXG | S_IRWXU);
+  fd = open(argv[1], O_RDWR | O_TRUNC | O_CREAT, S_IRWXO | S_IRWXG | S_IRWXU);
 
-  if (fd < 0)
-  {
-		perror("Error creating file.\n");
+	//checks to see if a file is found or not
+	if (fd < 0)
+	{
+  	perror("No File Found or unable to open file\n");
     exit(0);
   }
 
   int i;
 
-  write(fd, data, strlen(data)); //write file
+	//write to the file
+  write(fd, data, strlen(data));
 
-  fstat(fd, &buf); //information about file
+	//takes care of file size
+  fstat(fd, &buf);
+  	mm_file = mmap(0, (size_t) buf.st_size,
+    PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 
-	//creates a pointer
-  mm_file = mmap(0, (size_t) buf.st_size,
-		PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-
-	//MAP_FAILED is returned when there is a failure
+	//check if mm_file fails
   if (mm_file == MAP_FAILED)
-  {
-  	perror("mmap call fails\n");
+	{
+  	perror("MMAP creation has failed\n");
     close(fd);
     exit(0);
   }
 
-	//children in arrays
-	int child[2];
+	int child[2]; //child arrays
+
+	//statements to detmine what child method to invoke
 	if ((child[0] = fork()) == 0)
 	{
-		upchild();
+		firstChild();
 	}
 	if ((child[1] = fork()) == 0)
 	{
-		repchild();
+		secChild();
 	}
 
-	//wait for the children
+	//waiting for the child processes
 	waitpid(child[0], &i, 0);
   printf("Waited for child %d.\n\n", child[0]);
 	waitpid(child[1], &i, 0);
   printf("Waited for child %d.\n\n", child[1]);
 
-  //mapping deleted
+  //erase the mapping
   munmap(mm_file, buf.st_size);
+	//close the file
 	close(fd);
 
-  printf("Done.\n"); //all has finished
-
+  printf("Finished\n");
 	return 0;
 }
