@@ -1,4 +1,4 @@
-//Konstantin Polyashenko
+//Konstantin A. Polyashenko
 //Programming Assignment 5
 //CSC 139
 

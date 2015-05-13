@@ -2,8 +2,6 @@
 //Programming Assignment 6
 //CSC 139
 
-//C file for the server
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -21,60 +19,51 @@ typedef struct
 	long msg_to;
 	long msg_fm;
 	char buffer[BUFSIZ];
-}MESSAGE;
-
+} MESSAGE;
 int	mid;
 key_t	key;
-struct	msqid_ds buf;
+struct msqid_ds buf;
 MESSAGE msg;
 
 int main(int argc, char *argv[])
 {
-	// Create the ipcs key based on the current directory
-	// to maintain a shared one between files in the same
-	// directory.
-	key_t key = ftok(".", 'z');
+	key_t key = ftok(".", 'z'); //IPCS is made
 	if (key == -1)
 	{
-		perror("Key creation failed.\n");
+		perror("Key could not be made\n");
 		exit(0);
 	}
 
-	// Create the message queue from the key with permissions
-	// for the same user and group.
+	//message queue is made
 	int mid = msgget(key, IPC_CREAT|0660);
 	if (mid == -1)
 	{
-		perror("Message creation failed.\n");
+		perror("Message queue could not be made\n");
 		exit(0);
 	}
 
-	// It will fail if it returns -1.
 	while (msgrcv(mid, &msg, sizeof(msg), SERVER, 0) != -1)
 	{
-		// Make sure the message is not zero...else close the queue.
+		//if the queue is equal to 0, termination occurs
 		if (strlen(msg.buffer) == 0)
 		{
 			msgctl(mid, IPC_RMID, (struct msqid_ds *) 0);
-			printf("Empty message received...closing queue and exiting.\n");
+			printf("No message recieved\n");
 			exit(0);
 		}
 
-		// Loop through the length of the message and bring things to upper.
+    //produces uppercased letter message
 		int i;
 		for (i = 0; i < strlen(msg.buffer); i++)
 		{
-			if (msg.buffer[i] >= 'a' && msg.buffer[i] <= 'z')
-				msg.buffer[i] += 'A' - 'a'; // Signed chars are great.
+			msg.buffer[i] =  toupper(msg.buffer[i]);
 		}
 
-		// Return to sender.
+		//message is sent
 		msg.msg_to = msg.msg_fm;
-
 		msg.msg_fm = SERVER;
 
 		printf("%s\n", msg.buffer);
-
 		msgsnd(mid, &msg, sizeof(msg.buffer), 0);
 	}
 }

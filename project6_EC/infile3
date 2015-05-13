@@ -1,0 +1,1 @@
+clients and servers use msg send and receive system calls to request and provide services.

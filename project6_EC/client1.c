@@ -2,8 +2,6 @@
 //Programming Assignment 6
 //CSC 139
 
-//C file for the first client
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -22,7 +20,6 @@ typedef struct
 	long msg_fm;
 	char buffer[BUFSIZ];
 } MESSAGE;
-
 int mid;
 key_t key;
 struct msqid_ds buf;
@@ -30,59 +27,66 @@ MESSAGE msg;
 
 int main(int argc, char *argv[])
 {
-	// Input validation.
+	// as stated in PDF, program only runs with 2 file names in command line
+	// otherwise the message is printed, then it terminates
 	if (argc != 3)
-  {
+	{
   	printf("Correct Usage: client1 infile1 infile2\n");
     return 0;
   }
 
-	// Create the ipcs key based on the current directory
-	// to maintain a shared one between files in the same
-	// directory.
+
+	// The IPCS key is created in given directory
+	// from PDF
 	key_t key = ftok(".", 'z');
 	if (key == -1)
 	{
-		perror("Key creation failed.\n");
+		perror("Key could not be made\n");
 		exit(0);
 	}
 
-	// Create the message queue from the key with permissions
-	// for the same user and group.
+	// Message queue is created, "derived from key value"
+	// from PDF
 	int mid = msgget(key, IPC_CREAT|0660);
 	if (mid == -1)
 	{
-		perror("Message creation failed.\n");
+		perror("Message queue could not be made\n");
 		exit(0);
 	}
 
+  // variable for stepping through
 	int i = 1;
 	int fd;
 
 	while (i < 3)
 	{
-		// read file from argv
+		// the file is read into
 		fd = open(argv[i], O_RDONLY, S_IRWXO | S_IRWXG | S_IRWXU);
-		// fill buffer
+		// what has been read in placed in buffer
 		read(fd, msg.buffer, BUFSIZ);
 
-		// Prep the message for transport
+		// print what has been read before its manipulated
+    printf("%s\n", msg.buffer);
+
+		//Setup message to be sent to Server
 		msg.msg_to = SERVER;
+    // use the ID for linking
+		msg.msg_fm = getpid();
 
-		msg.msg_fm = getpid(); // It is a good type.
-
-		// Send and then receive.
+		// Send message, we dont use "sizeof" as stated
+		// in PDF due to problems it causes, instead
+		// buffer is used
 		msgsnd(mid, &msg, sizeof(msg.buffer), 0);
-		// Get the message based on pid.
+		// Receive the now updated message from Server, use ID
+		// to get specific message
 		msgrcv(mid, &msg, sizeof(msg), getpid(), 0);
 
-		// Print, close file, loop.
+		// Print the message, should be uppercase
 		printf("%s\n", msg.buffer);
 
+		// end file
 		close(fd);
-
 		i++;
 	}
-
-	printf("Client 1 exiting...\n");
+	printf("Client 1 has finished\n");
 }
