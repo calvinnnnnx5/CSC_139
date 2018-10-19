@@ -16,3 +16,5 @@ project 1 ReadMe
 - pipe() creates a pipe, creates both the reading and writing ends of the pipe
 	- a pipe should not be used for a process to talk to itself
 	- use pipe to communicate between parent or child, or between siblings
+	
+- remove() removes a file or directory that is passed in
